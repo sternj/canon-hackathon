@@ -66,7 +66,8 @@ func initConnStream(w http.ResponseWriter, r *http.Request) {
 	session, _ := sdp.ParseString(string(body))
 	audioCh, videoCh := channelsAndListenersFromSDP(session)
 	conns.addConnection(&rtpConnection{audioChan: audioCh, videoChan: videoCh, sess: session})
-
+	w.WriteHeader(202)
+	fmt.Fprintf(w, session.String())
 }
 
 func initSession(w http.ResponseWriter, r *http.Request) {

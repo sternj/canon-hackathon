@@ -5,6 +5,11 @@ import "net/http"
 var conns *connectionList
 var primary *primarySender
 
+/*
+TODO: Remove audio support
+TODO: Account for short UDP writes
+
+ */
 
 func main() {
 	conns = newConnectionList()
