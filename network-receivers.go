@@ -73,10 +73,10 @@ func AlternatingSockWrite(audioPort int, videoPort int, ip string, audioRecvChan
 	}()
 }
 
-func  channelsAndListenersFromSDP(session *sdp.Session) (*channels.RingChannel, *channels.RingChannel) {
-	audioChannel := channels.NewRingChannel(1000)
+func  channelsAndListenersFromSDP(session *sdp.Session) *channels.RingChannel {
+
 	videoChannel := channels.NewRingChannel(1000)
-	readRtpFromUdpSock(getAudioPort(session), audioChannel, "audio")
+
 	readRtpFromUdpSock(getVideoPort(session), videoChannel, "video")
-	return audioChannel, videoChannel
+	return videoChannel
 }

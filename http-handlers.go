@@ -10,10 +10,14 @@ import (
 )
 
 func acceptNewConn(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(400)
-		return
-	}
+	//if r.Method != http.MethodPost {
+	//	w.WriteHeader(400)
+	//	return
+	//}
+	//decoder := json.NewDecoder(r.Body)
+	//var params newSession
+	//_ = decoder.Decode(params)
+	//
 }
 
 func switchConn(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +27,7 @@ func switchConn(w http.ResponseWriter, r *http.Request) {
 	}
 	decoder := json.NewDecoder(r.Body)
 	var params changeParams
-	_ = decoder.Decode(params)
+	_ = decoder.Decode(&params)
 	newPrimary := params.newPrimary
 	if prim := conns.getElem(newPrimary); prim != nil {
 		primary.primary = prim
@@ -41,19 +45,25 @@ func initConnStream(w http.ResponseWriter, r *http.Request) {
 	}
 	decoder := json.NewDecoder(r.Body)
 	var params newConn
-	err := decoder.Decode(params)
+	err := decoder.Decode(&params)
 	if err != nil {
+		w.WriteHeader(500)
+		fmt.Println("DECODE ERROR")
 		return
 	}
 
-	resp, err2 := http.Get(params.uri)
-	defer resp.Body.Close()
+	resp, err2 := http.Get(params.Uri)
+	fmt.Println(params.Uri)
 	if err2 != nil {
+		fmt.Println(err2)
 		w.WriteHeader(500)
+		return
 		//send back a 500
 	}
 	if resp.StatusCode != 200 {
+		fmt.Println("breaking")
 		w.WriteHeader(resp.StatusCode)
+		return
 		//send resp.statusCode
 	}
 
@@ -61,13 +71,17 @@ func initConnStream(w http.ResponseWriter, r *http.Request) {
 	if decodeErr != nil {
 		w.WriteHeader(404)
 		//probably send 404
+		return
 	}
 
 	session, _ := sdp.ParseString(string(body))
-	audioCh, videoCh := channelsAndListenersFromSDP(session)
-	conns.addConnection(&rtpConnection{audioChan: audioCh, videoChan: videoCh, sess: session})
+	removeAudioFromSession(session)
+	videoCh := channelsAndListenersFromSDP(session)
+	conns.addConnection(&rtpConnection{ videoChan: videoCh, sess: session})
 	w.WriteHeader(202)
-	fmt.Fprintf(w, session.String())
+	w.Write(session.Bytes())
+
+
 }
 
 func initSession(w http.ResponseWriter, r *http.Request) {
@@ -75,16 +89,15 @@ func initSession(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	audioSendPort, _ := strconv.Atoi(r.URL.Query().Get("audio_port"))
 	videoSendPort, _ := strconv.Atoi(r.URL.Query().Get("video_port"))
 	sessionIndex, _ := strconv.Atoi(r.URL.Query().Get("session_index"))
 	sessionIp := r.URL.Query().Get("session_ip")
 	session := conns.getElem(sessionIndex)
-	fmt.Fprintf(w, readSessionWithSpecPorts(session.sess, videoSendPort, audioSendPort).String())
-	session.initSends(sessionIp, audioSendPort, videoSendPort)
+	w.Write(readSessionWithSpecPorts(session.sess, videoSendPort).Bytes())
+	session.initSends(sessionIp, videoSendPort)
 }
 type newConn struct {
-	uri string
+	Uri string
 }
 
 type changeParams struct {
@@ -94,5 +107,4 @@ type changeParams struct {
 type newSession struct {
 	ip string
 	videoPort int
-	audioPort int
 }

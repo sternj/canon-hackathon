@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 var conns *connectionList
 var primary *primarySender
@@ -19,6 +22,7 @@ func main() {
 	http.HandleFunc("/index.sdp", initSession)
 	http.HandleFunc("/switch_connection", switchConn)
 	http.HandleFunc("/new_connection", acceptNewConn)
+	fmt.Println("LISTENING ON 4567")
 	_ = http.ListenAndServe(":4567", nil)
 }
 //func main() {
