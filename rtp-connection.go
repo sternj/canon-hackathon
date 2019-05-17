@@ -19,22 +19,19 @@ func (r *rtpConnection) initSends(ip string, videoPort int) {
 	videoSock, _ := net.DialUDP("udp", nil, videoAddr)
 
 	go func() { //Video thread
+
 		for {
 			videoPacket := (<-r.videoChan.Out()).([]byte)
 
 			primary.mut.Lock()
 			//fmt.Println( primary.videoSock != nil)
 			//fmt.Println(primary.primary == r)
-			if primary.primary == r && primary.videoSock != nil {
+			if primary.primary == r  {
 				//fmt.Println(primary.videoSock == nil)
 				//fmt.Println("SENDING TO PRIMARY")
 				pkt := make([]byte, len(videoPacket))
 				copy(pkt, videoPacket)
-				n, err := primary.videoSock.Write(pkt)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println(n)
+				primary.primaryChannel.In() <- pkt
 			}
 			primary.mut.Unlock()
 			videoSock.Write(videoPacket)
