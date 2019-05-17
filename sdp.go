@@ -12,7 +12,7 @@ var primary *primarySender
 TODO: Remove audio support
 TODO: Account for short UDP writes
 
- */
+*/
 
 func main() {
 	conns = newConnectionList()
@@ -22,9 +22,12 @@ func main() {
 	http.HandleFunc("/index.sdp", initSession)
 	http.HandleFunc("/switch_connection", switchConn)
 	http.HandleFunc("/new_connection", acceptNewConn)
+	http.HandleFunc("/halt_connection", haltConnStream)
+	http.HandleFunc("/primary.sdp", getPrimarySDP)
 	fmt.Println("LISTENING ON 4567")
 	_ = http.ListenAndServe(":4567", nil)
 }
+
 //func main() {
 //	resp, _ := http.Get("http://129.64.183.140:8080/ccapi/ver100/shooting/liveview/rtpsessiondesc")
 //		//fmt.Println(err)
@@ -61,5 +64,3 @@ func main() {
 //	})
 //	_ = http.ListenAndServe(":4567", nil)
 //}
-
-

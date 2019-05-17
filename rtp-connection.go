@@ -8,30 +8,45 @@ import (
 )
 
 type rtpConnection struct {
-	sess *sdp.Session
+	sess      *sdp.Session
 	videoChan *channels.RingChannel
-	videoSock *net.UDPConn
 }
 
-func (r *rtpConnection) initSends(ip string,  videoPort int) {
-	//audioAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip, audioPort))
+func (r *rtpConnection) initSends(ip string, videoPort int) {
+	//audioAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", IP, audioPort))
 	videoAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip, videoPort))
 	//audioConn, _ := net.DialUDP("udp", nil, audioAddr)
-	videoConn, _:= net.DialUDP("udp", nil, videoAddr)
+	videoSock, _ := net.DialUDP("udp", nil, videoAddr)
 
 	go func() { //Video thread
 		for {
 			videoPacket := (<-r.videoChan.Out()).([]byte)
+
 			primary.mut.Lock()
-			if primary.primary == r {
+			//fmt.Println( primary.videoSock != nil)
+			//fmt.Println(primary.primary == r)
+			if primary.primary == r && primary.videoSock != nil {
+				//fmt.Println(primary.videoSock == nil)
+				//fmt.Println("SENDING TO PRIMARY")
 				pkt := make([]byte, len(videoPacket))
 				copy(pkt, videoPacket)
-				primary.primary.videoSock.Write(pkt)
+				n, err := primary.videoSock.Write(pkt)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println(n)
 			}
 			primary.mut.Unlock()
-			videoConn.Write(videoPacket)
+			videoSock.Write(videoPacket)
 		}
 
 	}()
-}
 
+	//go func() { //timed send
+	//	packet := (<-delayQueue.Out()).(*delayItem)
+	//	enqTime := time.Unix(packet.timestamp,0)
+	//	for time.Since(enqTime).Seconds() > 10 {
+	//		time.Sleep(1 * time.Second)
+	//	}
+	//}()
+}

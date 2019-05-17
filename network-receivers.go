@@ -1,16 +1,15 @@
 package main
 
-
-
 import (
 	"fmt"
 	"github.com/pixelbender/go-sdp/sdp"
 	"gopkg.in/eapache/channels.v1"
 	"net"
 	"os"
+	"time"
 )
 
-func readRtpFromUdpSock(listenPort int, sendChannel* channels.RingChannel, r_type string) {
+func readRtpFromUdpSock(listenPort int, sendChannel *channels.RingChannel, r_type string) {
 	connection, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", listenPort))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Could not open socket")
@@ -20,13 +19,16 @@ func readRtpFromUdpSock(listenPort int, sendChannel* channels.RingChannel, r_typ
 		listenConnection, _ := net.ListenUDP("udp", connection)
 		buff := make([]byte, 4096)
 		for {
-			n,_,err := listenConnection.ReadFromUDP(buff)
+			n, _, err := listenConnection.ReadFromUDP(buff)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "ERROR READING FROM UDP")
 			}
 			readBytes := buff[:n]
 			toEnqueue := make([]byte, len(readBytes))
+			toEnqueue2 := make([]byte, len(readBytes))
 			copy(toEnqueue, readBytes)
+			copy(toEnqueue2, readBytes)
+			delayIngest.In() <- &delayItem{timestamp: time.Now().Unix(), item: toEnqueue2}
 			sendChannel.In() <- toEnqueue
 			//if r_type == "audio" {
 			//	fmt.Println(n)
@@ -35,7 +37,7 @@ func readRtpFromUdpSock(listenPort int, sendChannel* channels.RingChannel, r_typ
 	}()
 }
 
-func WriteFromChannelToDestSock(port int, ip string, recvChannel* channels.RingChannel, r_type string) {
+func WriteFromChannelToDestSock(port int, ip string, recvChannel *channels.RingChannel, r_type string) {
 	addr, err1 := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip, port))
 	if err1 != nil {
 		fmt.Printf("ERROR\n")
@@ -56,7 +58,7 @@ func WriteFromChannelToDestSock(port int, ip string, recvChannel* channels.RingC
 	}()
 }
 
-func AlternatingSockWrite(audioPort int, videoPort int, ip string, audioRecvChannel* channels.RingChannel, videoRecvChannel* channels.RingChannel) {
+func AlternatingSockWrite(audioPort int, videoPort int, ip string, audioRecvChannel *channels.RingChannel, videoRecvChannel *channels.RingChannel) {
 	audioAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip, audioPort))
 	videoAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip, videoPort))
 	go func() {
@@ -73,7 +75,7 @@ func AlternatingSockWrite(audioPort int, videoPort int, ip string, audioRecvChan
 	}()
 }
 
-func  channelsAndListenersFromSDP(session *sdp.Session) *channels.RingChannel {
+func channelsAndListenersFromSDP(session *sdp.Session) *channels.RingChannel {
 
 	videoChannel := channels.NewRingChannel(1000)
 

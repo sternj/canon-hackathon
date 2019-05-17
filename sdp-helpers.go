@@ -1,8 +1,9 @@
 package main
 
-import "github.com/pixelbender/go-sdp/sdp"
-
-
+import (
+	"github.com/pixelbender/go-sdp/sdp"
+	"net"
+)
 
 func getVideoPort(session *sdp.Session) int {
 	return getMedia("video", session)
@@ -29,10 +30,19 @@ func readSessionWithSpecPorts(s *sdp.Session, videoport int) *sdp.Session {
 
 func removeAudioFromSession(s *sdp.Session) {
 	media := make([]*sdp.Media, 0)
-	for _,m := range s.Media {
+	for _, m := range s.Media {
 		if m.Type != "audio" {
 			media = append(media, m)
 		}
 	}
 	s.Media = media
+}
+
+func GetOutboundIP() net.IP {
+	conn, _ := net.Dial("udp", "8.8.8.8:80")
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
 }
