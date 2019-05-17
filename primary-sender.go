@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"gopkg.in/eapache/channels.v1"
 	"net"
@@ -9,10 +8,10 @@ import (
 )
 
 type primarySender struct {
-	mut       sync.RWMutex
+	mut sync.RWMutex
 	//videoSock *net.UDPConn
 	primaryChannel *channels.RingChannel
-	primary   *rtpConnection
+	primary        *rtpConnection
 }
 
 func (p *primarySender) resetPrimary(prim *rtpConnection) {
@@ -23,28 +22,31 @@ func (p *primarySender) resetPrimary(prim *rtpConnection) {
 
 func newPrimarySender() *primarySender {
 	return &primarySender{
-		mut:       sync.RWMutex{},
+		mut:            sync.RWMutex{},
 		primaryChannel: channels.NewRingChannel(100000),
-		primary:   nil,
+		primary:        nil,
 	}
 }
 
 func (p *primarySender) initPrimarySend(destIP string, videoSockAddr int) {
-	p.mut.Lock()
-	defer p.mut.Unlock()
-	var seq uint16 = 0
+	//p.mut.Lock()
+	//defer p.mut.Unlock()
+	//var seq uint16 = 0
 
 	videoAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", destIP, videoSockAddr))
 	videoSock, _ := net.DialUDP("udp", nil, videoAddr)
 	go func() {
 		fmt.Println("INITING PRIMARY SEND")
 		for {
-			b := make([]byte, 2)
-			binary.BigEndian.PutUint16(b, seq)
-			seq ++
+			//b := make([]byte, 2)
+			//binary.BigEndian.PutUint16(b, seq)
+			//seq ++
 			pkt := (<-p.primaryChannel.Out()).([]byte)
-			pkt[2] = b[0]
-			pkt[3] = b[1]
+			//fmt.Println("READING PRIMARY")
+			//pkt[2] = b[0]
+			//pkt[3] = b[1]
+			//fmt.Println(pkt[2])
+			//fmt.Println(pkt[3])
 			videoSock.Write(pkt)
 		}
 	}()

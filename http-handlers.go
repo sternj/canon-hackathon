@@ -51,7 +51,7 @@ func switchConn(w http.ResponseWriter, r *http.Request) {
 	var params changeParams
 	_ = decoder.Decode(&params)
 	newPrimary := params.NewPrimary
-	if prim := conns.getElem(newPrimary); prim != nil {
+	if prim := cons.getElem(newPrimary); prim != nil {
 		primary.primary = prim
 	}
 }
@@ -101,8 +101,8 @@ func initConnStream(w http.ResponseWriter, r *http.Request) {
 	videoCh := channelsAndListenersFromSDP(session)
 	c := &rtpConnection{videoChan: videoCh, sess: session}
 	delay := &rtpConnection{videoChan: delayQueue, sess: session}
-	conns.addConnection(c)
-	conns.addConnection(delay)
+	cons.addConnection(c)
+	cons.addConnection(delay)
 	if primary.isPrimaryNil() {
 		initDelay()
 		fmt.Println("SETTING PRIMARY")
@@ -146,7 +146,7 @@ func initSession(w http.ResponseWriter, r *http.Request) {
 	videoSendPort, _ := strconv.Atoi(r.URL.Query().Get("video_port"))
 	sessionIndex, _ := strconv.Atoi(r.URL.Query().Get("session_index"))
 	sessionIp := r.URL.Query().Get("session_ip")
-	session := conns.getElem(sessionIndex)
+	session := cons.getElem(sessionIndex)
 	w.Write(readSessionWithSpecPorts(session.sess, videoSendPort).Bytes())
 	session.initSends(sessionIp, videoSendPort)
 }
